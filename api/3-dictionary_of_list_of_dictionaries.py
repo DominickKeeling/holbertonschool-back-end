@@ -1,63 +1,55 @@
 #!/usr/bin/python3
-''' This script will gather data from an employee ID and returns
-    information about his/her list progress '''
+"""
+Export API data to CSV format
+Format: "USER_ID","USERNAME","TASK_COMPLETED_STATUS","TASK_TITLE"
+Filename: USER_ID.csv
+all tasks from all employees
+"""
 import json
 import requests
 import sys
 
 
-def get_employee_name(employee_id):
-    ''' This function will return the name of the employee '''
-    url = "{}/{}".format(base_url, employee_id)
-    response = requests.get(url)
-    return response.json().get("name")
-
-
-def get_assigned_tasks(employee_id):
-    ''' This function will return the number of all tasks
-        assigned to that the employee '''
-    url = "{}/{}/todos".format(base_url, employee_id)
+def get_employee_tasks(employeeId):
+    """Get the tasks of an employee"""
+    url = "https://jsonplaceholder.typicode.com/users/{}/todos"\
+        .format(employeeId)
     response = requests.get(url)
     return response.json()
 
 
-def get_completed_tasks(employee_id):
-    ''' This function will return the number of tasks
-        that the employee has completed '''
-    finished_tasks = []
-    url = "{}/{}/todos".format(base_url, employee_id)
+def get_employee_name(employeeId):
+    """Get the name of an employee by adding the employeeId to the URL"""
+    url = "https://jsonplaceholder.typicode.com/users/{}".format(employeeId)
     response = requests.get(url)
-    for task in response.json():
-        if task.get("completed"):
-            finished_tasks.append(task.get("title"))
-    return finished_tasks
+    return response.json().get("username")
 
 
-def print_employee_status(employee_name, completed_tasks, assigned_tasks):
-    ''' This function will return the information about the employee'''
-    print("Employee {} is done with tasks({}/{}):".format(employee_name,
-                                                          len(completed_tasks),
-                                                          len(assigned_tasks)))
-    for task in completed_tasks:
-        print("\t {}".format(task))
+def export_all_to_json():
+    data_dict = {}
 
+    # Fetch tasks for all employees and organize in the desired format
+    for employeeId in range(1, 11):  # Assuming employee IDs range from 1 to 10
+        tasks = get_employee_tasks(employeeId)
+        employeeName = get_employee_name(employeeId)
 
-def save_to_json(employee_id, assigned_tasks, employee_name):
-    ''' This function will save the status of the employee
-        in a json file '''
-    fin = "completed"
-    writeFile = open("{}.json".format(employee_id), "w")
-    writeFile.write(json.dumps({employee_id: [{"task": task.get("title"),
-                                               fin: task.get(fin),
-                                               "username": employee_name}
-                                              for task in assigned_tasks]}))
+        employee_data = []
+        for task in tasks:
+            task_data = {
+                "username": employeeName,
+                "task": task.get("title"),
+                "completed": task.get("completed")
+            }
+            employee_data.append(task_data)
+
+        data_dict[str(employeeId)] = employee_data
+
+    json_data = json.dumps(data_dict)
+
+    filename = "todo_all_employees.json"
+    with open(filename, "w") as jsonfile:
+        jsonfile.write(json_data)
 
 
 if __name__ == "__main__":
-    employee_id = sys.argv[1]
-    base_url = "https://jsonplaceholder.typicode.com/users"
-    employee_name = get_employee_name(employee_id)
-    assigned_tasks = get_assigned_tasks(employee_id)
-    completed_tasks = get_completed_tasks(employee_id)
-    save_to_json(employee_id, assigned_tasks, employee_name)
-    print_employee_status(employee_name, completed_tasks, assigned_tasks)
+    export_all_to_json()
