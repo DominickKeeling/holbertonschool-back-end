@@ -1,47 +1,50 @@
 #!/usr/bin/python3
-"""returns information about his/her TODO list progress."""
+''' This script will gather data from an employee ID and returns
+    information about his/her list progress '''
 import requests
-from sys import argv
+import sys
 
-if __name__ == '__main__':
-    # API URL for the JSONPlaceholder service
-    url = 'https://jsonplaceholder.typicode.com'
 
-    # Get the user ID from the command-line argument
-    user_id = argv[1]
+def get_employee_name(employee_id):
+    ''' This function will return the name of the employee '''
+    url = "{}/{}".format(base_url, employee_id)
+    response = requests.get(url)
+    return response.json().get("name")
 
-    # Make a GET request to fetch the user's TODO list with user information
-    response = requests.get(
-        f'{url}/users/{user_id}/todos',
-        params={'_expand': 'user'}
-    )
 
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Extract the JSON data from the response
-        data = response.json()
+def get_assigned_tasks(employee_id):
+    ''' This function will return the number of all tasks
+        assigned to that the employee '''
+    url = "{}/{}/todos".format(base_url, employee_id)
+    response = requests.get(url)
+    return len(response.json())
 
-        # Get the name of the user from the first task
-        # (assuming all tasks belong to the same user)
-        name = data[0]['user']['name']
 
-        # Filter tasks that are completed (completed = True)
-        tasks_ok = [task for task in data if task['completed']]
+def get_completed_tasks(employee_id):
+    ''' This function will return the number of tasks
+        that the employee has completed '''
+    finished_tasks = []
+    url = "{}/{}/todos".format(base_url, employee_id)
+    response = requests.get(url)
+    for task in response.json():
+        if task.get("completed"):
+            finished_tasks.append(task.get("title"))
+    return finished_tasks
 
-        # Get the number of completed tasks and the total number of tasks
-        n_task_ok = len(tasks_ok)
-        total_task = len(data)
 
-        # First line to display the user's name and progress
-        first_str = f"Employee {name} is done with tasks"
+def print_employee_status(employee_name, completed_tasks, assigned_tasks):
+    ''' This function will return the information about the employee'''
+    print("Employee {} is done with tasks({}/{}):".format(employee_name,
+                                                          len(completed_tasks),
+                                                          assigned_tasks))
+    for task in completed_tasks:
+        print("\t {}".format(task))
 
-        # Display progress information
-        print(f"{first_str} ({n_task_ok}/{total_task}):")
 
-        # Display the titles of completed tasks
-        for task in tasks_ok:
-            print(f"\t {task['title']}")
-
-    else:
-        # Display an error message if the request was not successful
-        print(f"Error: {response.status_code}")
+if __name__ == "__main__":
+    employee_id = sys.argv[1]
+    base_url = "https://jsonplaceholder.typicode.com/users"
+    employee_name = get_employee_name(employee_id)
+    assigned_tasks = get_assigned_tasks(employee_id)
+    completed_tasks = get_completed_tasks(employee_id)
+    print_employee_status(employee_name, completed_tasks, assigned_tasks)
