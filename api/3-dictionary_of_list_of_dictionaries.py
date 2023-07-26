@@ -10,7 +10,7 @@ def get_employee_name(employee_id):
     ''' This function will return the name of the employee '''
     url = "{}/{}".format(base_url, employee_id)
     response = requests.get(url)
-    return response.json().get("username")
+    return response.json().get("name")
 
 
 def get_assigned_tasks(employee_id):
